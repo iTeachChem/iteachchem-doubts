@@ -30,6 +30,10 @@ const ENABLE_AO_LINKS  = (process.env.ENABLE_AO_LINKS === 'true') || false;
 // Set FETCH_CONTENT=false to skip and tag on titles only (fast, like before).
 const FETCH_CONTENT    = (process.env.FETCH_CONTENT === 'false') ? false : true;
 const PREVIEW_LEN      = Number(process.env.PREVIEW_LEN || 300);
+// Read the thread's opening message PLUS early replies — the replies almost always
+// name the topic even when the question itself is just an image ("please help").
+const THREAD_MSGS      = Number(process.env.THREAD_MSGS || 25);   // messages read per thread for tagging
+const CLASSIFY_LEN     = Number(process.env.CLASSIFY_LEN || 1500);
 // ---------------------------------------------------------------------------
 
 const fs = require('fs');
@@ -56,18 +60,27 @@ async function api(pathname) {
 }
 
 
-// Fetch the opening message of a forum thread (its id == the thread id).
-async function fetchStarter(threadId) {
+// Fetch a thread's opening message (for the preview + image flag) plus its early replies
+// (used only for classification — replies usually name the topic the image doesn't).
+async function fetchThread(threadId) {
   try {
-    const msg = await api(`/channels/${threadId}/messages/${threadId}`);
-    const content = (msg.content || '').replace(/\s+/g, ' ').trim();
-    const atts = msg.attachments || [];
-    const embeds = msg.embeds || [];
+    const msgs = await api(`/channels/${threadId}/messages?after=0&limit=${THREAD_MSGS}`);
+    if (!Array.isArray(msgs) || msgs.length === 0) return { preview: '', hasImage: false, classifyText: '' };
+    const clean = x => (x || '').replace(/\s+/g, ' ').trim();
+    let starter = msgs.find(m => m.id === threadId);
+    if (!starter) starter = msgs.reduce((a, b) => (BigInt(a.id) < BigInt(b.id) ? a : b));
+    const atts = starter.attachments || [], embeds = starter.embeds || [];
     const hasImage =
       atts.some(a => (a.content_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.filename || a.url || '')) ||
       embeds.some(e => e.type === 'image' || e.image || e.thumbnail);
-    return { content, hasImage };
-  } catch (e) { return { content: '', hasImage: false }; }
+    const preview = clean(starter.content);
+    // combine starter + replies (skip bot messages) for classification signal
+    const classifyText = msgs
+      .filter(m => !(m.author && m.author.bot))
+      .map(m => clean(m.content)).filter(Boolean).join('  ')
+      .slice(0, CLASSIFY_LEN) || preview;
+    return { preview, hasImage, classifyText };
+  } catch (e) { return { preview: '', hasImage: false, classifyText: '' }; }
 }
 
 // --- Subject detection -----------------------------------------------------
@@ -182,14 +195,14 @@ function buildHtml(records, guildId) {
     const th = threads[i];
     const title = th.name || '';
     const subject = subjectFromTags(th.applied_tags, tagNameById) || subjectFromTitle(title) || DEFAULT_SUBJECT;
-    let preview = '', hasImage = false;
+    let preview = '', hasImage = false, classifyText = '';
     if (FETCH_CONTENT) {
-      const st = await fetchStarter(th.id);
-      preview = st.content; hasImage = st.hasImage;
+      const st = await fetchThread(th.id);
+      preview = st.preview; hasImage = st.hasImage; classifyText = st.classifyText;
       if ((i + 1) % 200 === 0) console.log(`  …${i + 1}/${threads.length}`);
       await sleep(120);
     }
-    const r = classify(subject, title, preview);
+    const r = classify(subject, title, classifyText || preview);
     const ao = AO_IDS ? AO_IDS.has(th.id) : ENABLE_AO_LINKS;
     records.push({
       s: subject, b: branchOf(subject, r.ch), ch: r.ch, cl: r.chLabel, sl: r.subLabel,
