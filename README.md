@@ -1,6 +1,6 @@
 # iTeachChem Doubts Index
 
-**Live site → https://iteachc.github.io/iteachchem-doubts/**
+**Live site → https://iteachchem.github.io/iteachchem-doubts/**
 
 Every doubt ever posted in the [iTeachChem Discord](https://discord.gg/iteachchem-1226379612238385242)
 — 4,300+ chemistry, physics, biology and maths questions students have asked and solved over two
