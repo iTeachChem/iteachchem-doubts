@@ -60,7 +60,10 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
 .tag-low{background:rgba(255,140,0,.16);color:var(--orange);cursor:help}
 .tag-uncat{background:rgba(229,62,62,.16);color:#ff8585}
 .tag-img{background:rgba(20,191,150,.16);color:var(--teal)}
+.tag-pin{background:rgba(255,140,0,.18);color:var(--orange)}
+.tag-solved{background:rgba(113,207,69,.18);color:var(--green)}
 .card-preview{font-size:12.5px;color:var(--muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card-date{margin-left:auto;align-self:center;font-size:11px;color:var(--muted);white-space:nowrap}
 .footer{display:flex;gap:7px;margin-top:auto;padding-top:3px}
 .t-link-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:5px 11px;border-radius:6px;text-decoration:none;border:1px solid var(--border)}
 .t-link-discord{background:#5865f2;color:#fff;border-color:#5865f2}
@@ -90,6 +93,7 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
   <button class="s-tab" data-s="physics">🌡️ Physics <span class="count" id="cnt-physics">0</span></button>
   <button class="s-tab" data-s="maths">🧮 Maths <span class="count" id="cnt-maths">0</span></button>
   <button class="s-tab" data-s="biology">🧬 Biology <span class="count" id="cnt-biology">0</span></button>
+  <button class="s-tab" data-s="all">🗂️ All <span class="count" id="cnt-all">0</span></button>
 </nav>
 <div id="layout">
   <aside id="sidebar"></aside>
@@ -107,10 +111,12 @@ const DISCORD_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="curr
 const state = { subject:'chemistry', chapter:'__all__', sub:'__all__', q:'' };
 const $ = s => document.querySelector(s);
 const esc = s => (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDate = ms => ms ? new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
 
 const SUBJECTS = ['chemistry','physics','maths','biology'];
 SUBJECTS.forEach(s=>{ const el=$('#cnt-'+s); if(el) el.textContent = THREADS.filter(t=>t.s===s).length; });
 $('#thread-count').textContent = THREADS.length;
+{ const ae=$('#cnt-all'); if(ae) ae.textContent = THREADS.length; }
 // hide subject tabs that have zero doubts (keeps the bar clean on smaller servers)
 SUBJECTS.forEach(s=>{ if(!THREADS.some(t=>t.s===s)){ const tab=document.querySelector('.s-tab[data-s="'+s+'"]'); if(tab) tab.style.display='none'; } });
 if(!THREADS.some(t=>t.s===state.subject)){ const first=THREADS[0]; if(first){ state.subject=first.s; document.querySelectorAll('.s-tab').forEach(t=>t.classList.toggle('active',t.dataset.s===first.s)); } }
@@ -122,9 +128,19 @@ const BRANCH_ORDER = {
   biology:['Biology','Uncategorized'],
 };
 
-function subjectThreads(){ return THREADS.filter(t=>t.s===state.subject); }
+function subjectThreads(){ return state.subject==='all' ? THREADS.slice() : THREADS.filter(t=>t.s===state.subject); }
 
 function renderSidebar(){
+  if(state.subject==='all'){
+    const cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
+    let h='<div class="ch-item ch-all active">All doubts <span class="n">'+THREADS.length+'</span></div>';
+    h+='<div class="branch"><div class="branch-h">Jump to subject</div>';
+    ['chemistry','physics','maths','biology'].forEach(su=>{const n=THREADS.filter(t=>t.s===su).length;if(!n)return;h+='<div class="ch-item" data-jump="'+su+'">'+cap(su)+' <span class="n">'+n+'</span></div>';});
+    h+='</div>';
+    $('#sidebar').innerHTML=h;
+    $('#sidebar').querySelectorAll('[data-jump]').forEach(el=>el.onclick=()=>{document.querySelectorAll('.s-tab').forEach(t=>t.classList.toggle('active',t.dataset.s===el.dataset.jump));state.subject=el.dataset.jump;state.chapter='__all__';state.sub='__all__';render();});
+    return;
+  }
   const ts = subjectThreads();
   const chMap = {};
   ts.forEach(t=>{ if(!chMap[t.ch]) chMap[t.ch]={label:t.cl,count:0,branch:t.b}; chMap[t.ch].count++; });
@@ -160,6 +176,8 @@ function currentList(){
   if(state.chapter!=='__all__') ts=ts.filter(t=>t.ch===state.chapter);
   if(state.sub!=='__all__') ts=ts.filter(t=>t.sl===state.sub);
   if(state.q){ const q=state.q.toLowerCase(); ts=ts.filter(t=>t.t.toLowerCase().includes(q)||(t.p||'').toLowerCase().includes(q)||t.cl.toLowerCase().includes(q)||t.sl.toLowerCase().includes(q)); }
+  // pinned posts (no subject) ride the top of EVERY subject's default view, like Discord
+  if(state.subject!=='all' && state.chapter==='__all__' && !state.q){ ts = THREADS.filter(t=>t.pin).concat(ts); }
   return ts;
 }
 
@@ -171,17 +189,18 @@ function renderGrid(){
   $('#empty').style.display='none';
   grid.innerHTML = ts.map(t=>{
     const low = t.cf<2, isUncat = t.ch==='uncat';
-    const chTag = isUncat ? '<span class="tag tag-uncat">Uncategorized</span>'
-      : '<span class="tag tag-ch">'+esc(t.cl)+'</span>'+(t.sl&&t.sl!==t.cl?'<span class="tag tag-sub">'+esc(t.sl)+'</span>':'');
+    const chTag = t.pin ? '' : (isUncat ? '<span class="tag tag-uncat">Uncategorized</span>'
+      : '<span class="tag tag-ch">'+esc(t.cl)+'</span>'+(t.sl&&t.sl!==t.cl?'<span class="tag tag-sub">'+esc(t.sl)+'</span>':''));
     const lowTag = (low && !isUncat) ? '<span class="tag tag-low" title="Low-confidence guess — only a generic keyword matched. Review if needed.">? guess</span>' : '';
     const imgTag = t.im ? '<span class="tag tag-img" title="This doubt includes an image — open it in Discord to view.">📎 image</span>' : '';
     return '<div class="card" onclick="window.open(\'' + t.u + '\',\'_blank\')">'
       +'<div class="card-title">'+esc(t.t||'(untitled)')+'</div>'
       +(t.p?'<div class="card-preview">'+esc(t.p)+'</div>':'')
-      +'<div class="tags">'+chTag+lowTag+imgTag+'</div>'
+      +'<div class="tags">'+(t.pin?'<span class="tag tag-pin">\ud83d\udccc Pinned</span>':'')+(t.sv?'<span class="tag tag-solved">\u2705 Solved</span>':'')+chTag+lowTag+imgTag+'</div>'
       +'<div class="footer">'
       +(t.a?'<a class="t-link-btn t-link-ao" href="'+t.a+'" target="_blank" onclick="event.stopPropagation()">AO</a>':'')
       +'<a class="t-link-btn t-link-discord" href="'+t.u+'" target="_blank" onclick="event.stopPropagation()">'+DISCORD_ICON+' Discord</a>'
+      +(t.d?'<span class="card-date">'+fmtDate(t.d)+'</span>':'')
       +'</div></div>';
   }).join('');
 }

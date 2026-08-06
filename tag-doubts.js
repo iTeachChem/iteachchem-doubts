@@ -30,6 +30,9 @@ const ENABLE_AO_LINKS  = (process.env.ENABLE_AO_LINKS === 'true') || false;
 // Set FETCH_CONTENT=false to skip and tag on titles only (fast, like before).
 const FETCH_CONTENT    = (process.env.FETCH_CONTENT === 'false') ? false : true;
 const PREVIEW_LEN      = Number(process.env.PREVIEW_LEN || 300);
+// Answer Overflow indexes the WHOLE public doubts forum, so link every doubt by default
+// (answeroverflow.com/m/<threadId>). Set AO_ALL=false to fall back to ao_ids.txt / ENABLE_AO_LINKS.
+const AO_ALL           = (process.env.AO_ALL === 'false') ? false : true;
 // Read the thread's opening message PLUS early replies — the replies almost always
 // name the topic even when the question itself is just an image ("please help").
 const THREAD_MSGS      = Number(process.env.THREAD_MSGS || 25);   // messages read per thread for tagging
@@ -143,6 +146,7 @@ async function fetchAllThreads(guildId) {
 
 // --- Branch grouping for the sidebar (chapter key -> branch label) ----------
 function branchOf(s, ch) {
+  if (s === 'pinned' || ch === 'pinned') return 'Pinned';
   if (ch === 'uncat') return 'Uncategorized';
   if (s === 'chemistry') return ch.startsWith('org_') ? 'Organic' : ch.startsWith('inorg_') ? 'Inorganic' : 'Physical';
   if (s === 'physics') {
@@ -182,6 +186,9 @@ function buildHtml(records, guildId) {
   const guildId = channel.guild_id;
   const tagNameById = {};
   (channel.available_tags || []).forEach(t => { tagNameById[t.id] = t.name; });
+  const solvedTag = (channel.available_tags || []).find(t => /solved/i.test(t.name || ''));
+  const SOLVED_TAG_ID = solvedTag ? solvedTag.id : null;
+  console.log('  solved tag:', SOLVED_TAG_ID || '(none)');
   console.log(`  server (guild) id: ${guildId}`);
   console.log(`  forum tags found: ${Object.values(tagNameById).join(', ') || '(none)'}`);
 
@@ -194,7 +201,8 @@ function buildHtml(records, guildId) {
   for (let i = 0; i < threads.length; i++) {
     const th = threads[i];
     const title = th.name || '';
-    const subject = subjectFromTags(th.applied_tags, tagNameById) || subjectFromTitle(title) || DEFAULT_SUBJECT;
+    const pin = (Number(th.flags || 0) & 2) ? 1 : 0;    // forum PINNED flag -> server post, not a subject doubt
+    const solved = (SOLVED_TAG_ID && (th.applied_tags || []).includes(SOLVED_TAG_ID)) ? 1 : 0;
     let preview = '', hasImage = false, classifyText = '';
     if (FETCH_CONTENT) {
       const st = await fetchThread(th.id);
@@ -202,15 +210,25 @@ function buildHtml(records, guildId) {
       if ((i + 1) % 200 === 0) console.log(`  …${i + 1}/${threads.length}`);
       await sleep(120);
     }
-    const r = classify(subject, title, classifyText || preview);
-    const ao = AO_IDS ? AO_IDS.has(th.id) : ENABLE_AO_LINKS;
+    let subject, r;
+    if (pin) { // pinned server posts (welcome/rules) carry no subject tag; don't force one
+      subject = 'pinned';
+      r = { ch: 'pinned', chLabel: 'Pinned', sub: 'pinned', subLabel: 'Pinned', conf: 2 };
+    } else {
+      subject = subjectFromTags(th.applied_tags, tagNameById) || subjectFromTitle(title) || DEFAULT_SUBJECT;
+      r = classify(subject, title, classifyText || preview);
+    }
+    const ao = AO_ALL ? true : (AO_IDS ? AO_IDS.has(th.id) : ENABLE_AO_LINKS);
+    const created = Number((BigInt(th.id) >> 22n) + 1420070400000n); // snowflake -> ms; when the doubt was asked
     records.push({
       s: subject, b: branchOf(subject, r.ch), ch: r.ch, cl: r.chLabel, sl: r.subLabel,
-      cf: r.conf, t: title, p: preview.slice(0, PREVIEW_LEN), im: hasImage ? 1 : 0,
+      cf: r.conf, t: title, p: preview.slice(0, PREVIEW_LEN), im: hasImage ? 1 : 0, d: created, pin: pin, sv: solved,
       u: `https://discord.com/channels/${guildId}/${th.id}`,
       a: ao ? `https://www.answeroverflow.com/m/${th.id}` : null,
     });
   }
+
+  records.sort((x, y) => (y.pin - x.pin) || (y.d - x.d)); // pinned posts first, then newest (like Answer Overflow / Discord)
 
   // quick console summary
   const bySub = {}, uncat = {};
