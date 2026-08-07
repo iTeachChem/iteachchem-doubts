@@ -37,6 +37,12 @@ const AO_ALL           = (process.env.AO_ALL === 'false') ? false : true;
 // name the topic even when the question itself is just an image ("please help").
 const THREAD_MSGS      = Number(process.env.THREAD_MSGS || 25);   // messages read per thread for tagging
 const CLASSIFY_LEN     = Number(process.env.CLASSIFY_LEN || 1500);
+// v7 incremental: reuse the previous build's content+classification for threads that already exist;
+// only fetch content for NEW threads. Solved/pin/dates/deletions stay fresh (from the cheap list).
+// FULL_REBUILD=true re-fetches everything (run ~monthly to re-tag old threads with classifier updates).
+const INCREMENTAL      = (process.env.INCREMENTAL === 'false') ? false : true;
+const FULL_REBUILD     = (process.env.FULL_REBUILD === 'true') || false;
+const PREV_SITE_URL    = process.env.PREV_SITE_URL || 'https://iteachchem.github.io/iteachchem-doubts/';
 // ---------------------------------------------------------------------------
 
 const fs = require('fs');
@@ -84,6 +90,22 @@ async function fetchThread(threadId) {
       .slice(0, CLASSIFY_LEN) || preview;
     return { preview, hasImage, classifyText };
   } catch (e) { return { preview: '', hasImage: false, classifyText: '' }; }
+}
+
+// v7: load the PREVIOUS build (from the live site) as a cache of the expensive fields.
+async function loadCache() {
+  if (!INCREMENTAL || FULL_REBUILD) { console.log('Incremental: OFF -> full scrape.'); return new Map(); }
+  try {
+    const res = await fetch(PREV_SITE_URL, { headers: { 'User-Agent': 'DoubtIndexBot/1.0' } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const html = await res.text();
+    const m = html.match(/const THREADS = (\[[\s\S]*\]);\s*\r?\nconst DISCORD_ICON/);
+    if (!m) throw new Error('could not parse previous THREADS');
+    const cache = new Map();
+    for (const r of JSON.parse(m[1])) { const id = (String(r.u || '').match(/\/(\d+)$/) || [])[1]; if (id) cache.set(id, r); }
+    console.log(`Incremental: cached ${cache.size} doubts from the previous build.`);
+    return cache;
+  } catch (e) { console.log('Incremental: no cache (' + e.message + ') -> full scrape.'); return new Map(); }
 }
 
 // --- Subject detection -----------------------------------------------------
@@ -196,30 +218,36 @@ function buildHtml(records, guildId) {
   const threads = await fetchAllThreads(guildId);
   console.log(`Total doubts fetched: ${threads.length}`);
 
-  if (FETCH_CONTENT) console.log('Fetching question text + image info for each doubt (slow: one call per doubt)…');
+  const cache = await loadCache();
+  if (FETCH_CONTENT) console.log('Building records (fetching content only for NEW threads)…');
   const records = [];
+  let reused = 0, fetched = 0;
   for (let i = 0; i < threads.length; i++) {
     const th = threads[i];
     const title = th.name || '';
-    const pin = (Number(th.flags || 0) & 2) ? 1 : 0;    // forum PINNED flag -> server post, not a subject doubt
+    const pin = (Number(th.flags || 0) & 2) ? 1 : 0;
     const solved = (SOLVED_TAG_ID && (th.applied_tags || []).includes(SOLVED_TAG_ID)) ? 1 : 0;
-    let preview = '', hasImage = false, classifyText = '';
-    if (FETCH_CONTENT) {
-      const st = await fetchThread(th.id);
-      preview = st.preview; hasImage = st.hasImage; classifyText = st.classifyText;
-      if ((i + 1) % 200 === 0) console.log(`  …${i + 1}/${threads.length}`);
-      await sleep(120);
-    }
-    let subject, r;
-    if (pin) { // pinned server posts (welcome/rules) carry no subject tag; don't force one
-      subject = 'pinned';
-      r = { ch: 'pinned', chLabel: 'Pinned', sub: 'pinned', subLabel: 'Pinned', conf: 2 };
-    } else {
-      subject = subjectFromTags(th.applied_tags, tagNameById) || subjectFromTitle(title) || DEFAULT_SUBJECT;
-      r = classify(subject, title, classifyText || preview);
-    }
+    const created = Number((BigInt(th.id) >> 22n) + 1420070400000n); // snowflake -> ms
     const ao = AO_ALL ? true : (AO_IDS ? AO_IDS.has(th.id) : ENABLE_AO_LINKS);
-    const created = Number((BigInt(th.id) >> 22n) + 1420070400000n); // snowflake -> ms; when the doubt was asked
+    const cached = cache.get(th.id);
+    let subject, r, preview = '', hasImage = false;
+    if (cached) {                                   // reuse expensive content + classification
+      preview = cached.p || ''; hasImage = !!cached.im;
+      if (pin) { subject = 'pinned'; r = { ch: 'pinned', chLabel: 'Pinned', subLabel: 'Pinned', conf: 2 }; }
+      else { subject = cached.s; r = { ch: cached.ch, chLabel: cached.cl, subLabel: cached.sl, conf: cached.cf }; }
+      reused++;
+    } else {                                        // new thread -> the expensive path
+      let classifyText = '';
+      if (FETCH_CONTENT) {
+        const st = await fetchThread(th.id);
+        preview = st.preview; hasImage = st.hasImage; classifyText = st.classifyText;
+        fetched++;
+        if (fetched % 50 === 0) console.log(`  …fetched ${fetched} new`);
+        await sleep(120);
+      }
+      if (pin) { subject = 'pinned'; r = { ch: 'pinned', chLabel: 'Pinned', subLabel: 'Pinned', conf: 2 }; }
+      else { subject = subjectFromTags(th.applied_tags, tagNameById) || subjectFromTitle(title) || DEFAULT_SUBJECT; r = classify(subject, title, classifyText || preview); }
+    }
     records.push({
       s: subject, b: branchOf(subject, r.ch), ch: r.ch, cl: r.chLabel, sl: r.subLabel,
       cf: r.conf, t: title, p: preview.slice(0, PREVIEW_LEN), im: hasImage ? 1 : 0, d: created, pin: pin, sv: solved,
@@ -227,6 +255,7 @@ function buildHtml(records, guildId) {
       a: ao ? `https://www.answeroverflow.com/m/${th.id}` : null,
     });
   }
+  console.log(`Content: reused ${reused} from cache, fetched ${fetched} new.`);
 
   records.sort((x, y) => (y.pin - x.pin) || (y.d - x.d)); // pinned posts first, then newest (like Answer Overflow / Discord)
 
