@@ -13,7 +13,7 @@
   --chem:#14bf96;--phys:#1865f2;--math:#9059ff;--bio:#71cf45;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:14px;background:var(--navy);color:var(--text)}
+html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:14px;background:var(--navy);color:var(--text);overflow-x:hidden}
 #topbar{position:sticky;top:0;z-index:200;background:var(--navy2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:58px;box-shadow:var(--shadow)}
 .logo{font-size:16px;font-weight:900;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--teal),var(--blue));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
@@ -42,6 +42,7 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
 .ch-item .n{font-size:11px;color:var(--muted);background:rgba(255,255,255,.06);border-radius:var(--pill);padding:1px 7px;flex-shrink:0}
 .ch-item.active .n{color:#fff;background:rgba(255,255,255,.2)}
 .ch-all{font-weight:700;margin-bottom:6px;border:1px solid var(--border)}
+#ch-toggle-wrap{display:none}
 #content{padding:16px 24px 60px}
 #subbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .sub-chip{padding:4px 12px;border-radius:var(--pill);font-size:12px;font-weight:700;cursor:pointer;background:var(--navy3);border:1px solid var(--border);color:var(--muted)}
@@ -72,10 +73,18 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
 .t-link-ao:hover{border-color:var(--teal)}
 #empty{display:none;text-align:center;padding:60px 20px;color:var(--muted)}
 #empty h3{color:var(--text);margin-bottom:6px}
+#more{text-align:center;padding:16px 0 8px}
+#more-btn{background:var(--navy3);border:1px solid var(--border);color:var(--text);font-weight:700;font-size:13px;padding:11px 26px;border-radius:8px;cursor:pointer}
+#more-btn:hover{border-color:var(--blue)}
 @media(max-width:760px){
   #layout{grid-template-columns:1fr}
-  #sidebar{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--border)}
+  #grid{grid-template-columns:1fr}
+  .stats{display:none}
   .logo span{display:none}
+  #ch-toggle-wrap{display:block;padding:10px 14px 0;background:var(--navy2)}
+  #ch-toggle{width:100%;padding:11px 14px;border-radius:8px;background:var(--navy3);border:1px solid var(--border);color:var(--text);font-weight:700;font-size:13px;text-align:left;cursor:pointer}
+  #sidebar{position:static;max-height:0;overflow:hidden;border-right:none;padding:0 12px}
+  #sidebar.open{max-height:60vh;overflow-y:auto;padding:12px 12px;border-bottom:1px solid var(--border)}
 }
 </style>
 </head>
@@ -95,12 +104,14 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
   <button class="s-tab" data-s="biology">🧬 Biology <span class="count" id="cnt-biology">0</span></button>
   <button class="s-tab" data-s="all">🗂️ All <span class="count" id="cnt-all">0</span></button>
 </nav>
+<div id="ch-toggle-wrap"><button id="ch-toggle">\u25be Browse by chapter</button></div>
 <div id="layout">
   <aside id="sidebar"></aside>
   <section id="content">
     <div id="crumb"></div>
     <div id="subbar"></div>
     <div id="grid"></div>
+    <div id="more"></div>
     <div id="empty"><h3>No doubts found</h3><p>Try a different chapter, type, or search term.</p></div>
   </section>
 </div>
@@ -108,7 +119,7 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
 const THREADS = /*__DATA__*/;
 const DISCORD_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18 18 0 0 1 4.3 1.4 13.6 13.6 0 0 0-15 0A18 18 0 0 1 8.8 3.5L8.6 3a19.8 19.8 0 0 0-4.9 1.4A20.6 20.6 0 0 0 .2 18.2a19.9 19.9 0 0 0 6 3l.8-1.3a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.3a19.9 19.9 0 0 0 6-3 20.5 20.5 0 0 0-2.5-13.5ZM8.3 15c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.7.9 1.7 2-.7 2-1.7 2Zm7.4 0c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.7.9 1.7 2-.7 2-1.7 2Z"/></svg>';
 
-const state = { subject:'chemistry', chapter:'__all__', sub:'__all__', q:'' };
+const state = { subject:'chemistry', chapter:'__all__', sub:'__all__', q:'', limit:400 };
 const $ = s => document.querySelector(s);
 const esc = s => (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmtDate = ms => ms ? new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
@@ -138,7 +149,7 @@ function renderSidebar(){
     ['chemistry','physics','maths','biology'].forEach(su=>{const n=THREADS.filter(t=>t.s===su).length;if(!n)return;h+='<div class="ch-item" data-jump="'+su+'">'+cap(su)+' <span class="n">'+n+'</span></div>';});
     h+='</div>';
     $('#sidebar').innerHTML=h;
-    $('#sidebar').querySelectorAll('[data-jump]').forEach(el=>el.onclick=()=>{document.querySelectorAll('.s-tab').forEach(t=>t.classList.toggle('active',t.dataset.s===el.dataset.jump));state.subject=el.dataset.jump;state.chapter='__all__';state.sub='__all__';render();});
+    $('#sidebar').querySelectorAll('[data-jump]').forEach(el=>el.onclick=()=>{document.querySelectorAll('.s-tab').forEach(t=>t.classList.toggle('active',t.dataset.s===el.dataset.jump));state.subject=el.dataset.jump;state.chapter='__all__';state.sub='__all__';state.limit=400;closeChapters();render();});
     return;
   }
   const ts = subjectThreads();
@@ -155,7 +166,7 @@ function renderSidebar(){
     h += '</div>';
   });
   $('#sidebar').innerHTML = h;
-  $('#sidebar').querySelectorAll('.ch-item').forEach(el=>el.onclick=()=>{ state.chapter=el.dataset.ch; state.sub='__all__'; render(); });
+  $('#sidebar').querySelectorAll('.ch-item').forEach(el=>el.onclick=()=>{ state.chapter=el.dataset.ch; state.sub='__all__'; state.limit=400; closeChapters(); render(); });
 }
 
 function renderSubbar(){
@@ -168,7 +179,7 @@ function renderSubbar(){
   let h='<div class="sub-chip'+(state.sub==='__all__'?' active':'')+'" data-sub="__all__">All types</div>';
   keys.sort((a,b)=>subs[b]-subs[a]).forEach(k=>{ h+='<div class="sub-chip'+(state.sub===k?' active':'')+'" data-sub="'+esc(k)+'">'+esc(k)+' ('+subs[k]+')</div>'; });
   bar.innerHTML=h;
-  bar.querySelectorAll('.sub-chip').forEach(el=>el.onclick=()=>{ state.sub=el.dataset.sub; render(); });
+  bar.querySelectorAll('.sub-chip').forEach(el=>el.onclick=()=>{ state.sub=el.dataset.sub; state.limit=400; render(); });
 }
 
 function currentList(){
@@ -182,10 +193,11 @@ function currentList(){
 }
 
 function renderGrid(){
-  const ts=currentList();
-  $('#crumb').innerHTML = ts.length+' doubt'+(ts.length===1?'':'s')+(state.chapter!=='__all__'?' in <b>'+esc((ts[0]?ts[0].cl:state.chapter))+'</b>':'');
-  const grid=$('#grid');
-  if(!ts.length){ grid.innerHTML=''; $('#empty').style.display='block'; return; }
+  const all=currentList();
+  const ts = all.slice(0, state.limit||400);
+  $('#crumb').innerHTML = all.length+' doubt'+(all.length===1?'':'s')+(state.chapter!=='__all__'?' in <b>'+esc((all[0]?all[0].cl:state.chapter))+'</b>':'');
+  const grid=$('#grid'); const more=$('#more');
+  if(!all.length){ grid.innerHTML=''; if(more)more.innerHTML=''; $('#empty').style.display='block'; return; }
   $('#empty').style.display='none';
   grid.innerHTML = ts.map(t=>{
     const low = t.cf<2, isUncat = t.ch==='uncat';
@@ -203,15 +215,18 @@ function renderGrid(){
       +(t.d?'<span class="card-date">'+fmtDate(t.d)+'</span>':'')
       +'</div></div>';
   }).join('');
+  if(more){ if(all.length>ts.length){ const nxt=Math.min(400, all.length-ts.length); more.innerHTML='<button id="more-btn">Show '+nxt+' more \u00b7 '+(all.length-ts.length)+' left</button>'; $('#more-btn').onclick=()=>{ state.limit=(state.limit||400)+400; renderGrid(); }; } else more.innerHTML=''; }
 }
 
 function render(){ renderSidebar(); renderSubbar(); renderGrid(); }
 document.querySelectorAll('.s-tab').forEach(tab=>tab.onclick=()=>{
   document.querySelectorAll('.s-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
-  state.subject=tab.dataset.s; state.chapter='__all__'; state.sub='__all__'; render();
+  state.subject=tab.dataset.s; state.chapter='__all__'; state.sub='__all__'; state.limit=400; render();
 });
-$('#search-input').addEventListener('input', e=>{ state.q=e.target.value.trim(); render(); });
+let __searchTimer; function closeChapters(){ const sb=$('#sidebar'); if(sb) sb.classList.remove('open'); const b=$('#ch-toggle'); if(b) b.textContent='\u25be Browse by chapter'; }
+{ const b=$('#ch-toggle'); if(b) b.onclick=()=>{ const sb=$('#sidebar'); const open=sb.classList.toggle('open'); b.textContent=open?'\u25b4 Hide chapters':'\u25be Browse by chapter'; }; }
+$('#search-input').addEventListener('input', e=>{ const v=e.target.value.trim(); clearTimeout(__searchTimer); __searchTimer=setTimeout(()=>{ state.q=v; state.limit=400; render(); }, 120); });
 render();
 </script>
 </body>
