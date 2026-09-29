@@ -73,6 +73,13 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
 .t-link-ao:hover{border-color:var(--teal)}
 #empty{display:none;text-align:center;padding:60px 20px;color:var(--muted)}
 #empty h3{color:var(--text);margin-bottom:6px}
+#byline{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:7px 24px;background:var(--navy);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)}
+#byline b{color:var(--text)}
+#byline .by-links{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#byline a{color:var(--muted);text-decoration:none;font-weight:700}
+#byline a:hover{color:var(--text)}
+#byline a.by-discord{background:#5865f2;color:#fff;padding:4px 11px;border-radius:var(--pill)}
+#byline a.by-discord:hover{filter:brightness(1.1)}
 #more{text-align:center;padding:16px 0 8px}
 #more-btn{background:var(--navy3);border:1px solid var(--border);color:var(--text);font-weight:700;font-size:13px;padding:11px 26px;border-radius:8px;cursor:pointer}
 #more-btn:hover{border-color:var(--blue)}
@@ -81,6 +88,8 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
   #grid{grid-template-columns:1fr}
   .stats{display:none}
   .logo span{display:none}
+  #byline{padding:7px 14px;gap:8px}
+  #byline .by-links{margin-left:0;gap:10px}
   #ch-toggle-wrap{display:block;padding:10px 14px 0;background:var(--navy2)}
   #ch-toggle{width:100%;padding:11px 14px;border-radius:8px;background:var(--navy3);border:1px solid var(--border);color:var(--text);font-weight:700;font-size:13px;text-align:left;cursor:pointer}
   #sidebar{position:static;max-height:0;overflow:hidden;border-right:none;padding:0 12px}
@@ -97,6 +106,15 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
   </div>
   <div class="stats"><span id="thread-count">__COUNT__</span> doubts · chapter + type tagged<span class="last-updated"> · Updated __UPDATED__</span></div>
 </header>
+<div id="byline">
+  <span>Built by <b>iTeachChem (Ashish)</b></span>
+  <span class="by-links">
+    <a class="by-discord" href="https://discord.gg/Ust8YpSCYf" target="_blank" rel="noopener">💬 Join the Discord</a>
+    <a href="https://github.com/iteachc/" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://in.linkedin.com/in/iteachchem" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://www.youtube.com/@iteachchem" target="_blank" rel="noopener">YouTube</a>
+  </span>
+</div>
 <nav id="subject-nav" role="tablist">
   <button class="s-tab active" data-s="chemistry">⚗️ Chemistry <span class="count" id="cnt-chemistry">0</span></button>
   <button class="s-tab" data-s="physics">🌡️ Physics <span class="count" id="cnt-physics">0</span></button>
