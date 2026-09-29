@@ -2,7 +2,7 @@
 
 **Live site → https://iteachchem.github.io/iteachchem-doubts/**
 
-Every doubt ever posted in the [iTeachChem Discord](https://discord.gg/iteachchem-1226379612238385242)
+Every doubt ever posted in the [iTeachChem Discord](https://discord.gg/Ust8YpSCYf)
 — 4,300+ chemistry, physics, biology and maths questions students have asked and solved over two
 years — turned into a single, searchable webpage, sorted by **NCERT/JEE chapter and sub-type**.
 It rebuilds itself automatically every week.
