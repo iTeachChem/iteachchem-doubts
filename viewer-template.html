@@ -80,6 +80,13 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
 #byline a:hover{color:var(--text)}
 #byline a.by-discord{background:#5865f2;color:#fff;padding:4px 11px;border-radius:var(--pill)}
 #byline a.by-discord:hover{filter:brightness(1.1)}
+#resbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 24px;background:var(--navy);border-bottom:1px solid var(--border);font-size:12px}
+#resbar:empty{display:none}
+#resbar .res-h{color:var(--muted);font-weight:700;margin-right:2px}
+#resbar a{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:var(--pill);text-decoration:none;font-weight:700;background:var(--navy3);border:1px solid var(--border);color:var(--text)}
+#resbar a:hover{border-color:var(--teal)}
+#resbar a.res-own{background:#ff8c00;border-color:#ff8c00;color:#1b1b2f}
+#resbar a.res-own:hover{filter:brightness(1.08)}
 #more{text-align:center;padding:16px 0 8px}
 #more-btn{background:var(--navy3);border:1px solid var(--border);color:var(--text);font-weight:700;font-size:13px;padding:11px 26px;border-radius:8px;cursor:pointer}
 #more-btn:hover{border-color:var(--blue)}
@@ -89,6 +96,7 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
   .stats{display:none}
   .logo span{display:none}
   #byline{padding:7px 14px;gap:8px}
+  #resbar{padding:8px 14px;gap:6px}
   #byline .by-links{margin-left:0;gap:10px}
   #ch-toggle-wrap{display:block;padding:10px 14px 0;background:var(--navy2)}
   #ch-toggle{width:100%;padding:11px 14px;border-radius:8px;background:var(--navy3);border:1px solid var(--border);color:var(--text);font-weight:700;font-size:13px;text-align:left;cursor:pointer}
@@ -122,6 +130,7 @@ html,body{min-height:100%;font-family:"Lato",-apple-system,sans-serif;font-size:
   <button class="s-tab" data-s="biology">🧬 Biology <span class="count" id="cnt-biology">0</span></button>
   <button class="s-tab" data-s="all">🗂️ All <span class="count" id="cnt-all">0</span></button>
 </nav>
+<div id="resbar"></div>
 <div id="ch-toggle-wrap"><button id="ch-toggle">\u25be Browse by chapter</button></div>
 <div id="layout">
   <aside id="sidebar"></aside>
@@ -236,7 +245,19 @@ function renderGrid(){
   if(more){ if(all.length>ts.length){ const nxt=Math.min(400, all.length-ts.length); more.innerHTML='<button id="more-btn">Show '+nxt+' more \u00b7 '+(all.length-ts.length)+' left</button>'; $('#more-btn').onclick=()=>{ state.limit=(state.limit||400)+400; renderGrid(); }; } else more.innerHTML=''; }
 }
 
-function render(){ renderSidebar(); renderSubbar(); renderGrid(); }
+const KA='https://www.khanacademy.org/';
+const RES={
+  chemistry:[['📺 Chem Videos','https://docs.google.com/spreadsheets/d/1kYwIrq9CsiwKa6Riwj143_YtKj1uGW6DSybfCRX4amo/edit?gid=2046243715#gid=2046243715',1],
+             ['Khan Academy · Class 11 Chemistry',KA+'science/class-11-chemistry-india'],['Khan Academy · Class 12 Chemistry',KA+'science/class-12-chemistry-india']],
+  physics:[['Khan Academy · Class 11 Physics',KA+'science/in-in-class11th-physics'],['Khan Academy · Class 12 Physics',KA+'science/in-in-class-12th-physics-india']],
+  maths:[['Khan Academy · Class 11 Maths',KA+'math/ncert-class-11'],['Khan Academy · Class 12 Maths',KA+'math/ncert-class-12']],
+  biology:[['Khan Academy · Class 11 Biology',KA+'science/in-in-class-11-biology-india'],['Khan Academy · Class 12 Biology',KA+'science/in-in-class-12-biology-india']]
+};
+function renderRes(){
+  const list = state.subject==='all' ? [RES.chemistry[0]] : (RES[state.subject]||[]);
+  $('#resbar').innerHTML = list.length ? '<span class="res-h">Videos &amp; practice:</span>' + list.map(([l,u,own])=>`<a ${own?'class="res-own" ':''}href="${u}" target="_blank" rel="noopener">${l}</a>`).join('') : '';
+}
+function render(){ renderRes(); renderSidebar(); renderSubbar(); renderGrid(); }
 document.querySelectorAll('.s-tab').forEach(tab=>tab.onclick=()=>{
   document.querySelectorAll('.s-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
