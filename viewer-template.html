@@ -135,8 +135,8 @@ input::placeholder{color:oklch(0.62 0.012 260)}
 .btn{flex:1;display:flex;align-items:center;justify-content:center;height:34px;border-radius:7px;font-size:13px;white-space:nowrap}
 .btn-ao{background:oklch(0.80 0.12 65 / .14);color:oklch(0.86 0.10 65);font-weight:600}
 .btn-ao:hover{background:oklch(0.80 0.12 65 / .22);color:oklch(0.86 0.10 65)}
-.btn-dc{border:1px solid var(--line2);color:oklch(0.88 0.006 260);font-weight:500}
-.btn-dc:hover{border-color:oklch(0.45 0.01 260);color:var(--text)}
+.btn-dc{gap:7px;background:#5865f2;color:#fff;font-weight:600}  /* Discord's own blurple */
+.btn-dc:hover{background:#4752c4;color:#fff}
 #more{display:flex;justify-content:center;margin-top:20px}
 #more:empty{display:none}
 #more-btn{height:40px;padding:0 22px;border-radius:var(--r);border:1px solid var(--line2);background:var(--surf);cursor:pointer;font-size:14px;font-weight:500}
@@ -239,6 +239,8 @@ input::placeholder{color:oklch(0.62 0.012 260)}
 </div>
 <script>
 const THREADS = /*__DATA__*/;
+
+const DISCORD_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18 18 0 0 1 4.3 1.4 13.6 13.6 0 0 0-15 0A18 18 0 0 1 8.8 3.5L8.6 3a19.8 19.8 0 0 0-4.9 1.4A20.6 20.6 0 0 0 .2 18.2a19.9 19.9 0 0 0 6 3l.8-1.3a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.3a19.9 19.9 0 0 0 6-3 20.5 20.5 0 0 0-2.5-13.5ZM8.3 15c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.7.9 1.7 2-.7 2-1.7 2Zm7.4 0c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.7.9 1.7 2-.7 2-1.7 2Z"/></svg>';
 
 const state = { subject:'chemistry', chapter:'__all__', sub:'__all__', q:'', solved:false, limit:400 };
 const $ = s => document.querySelector(s);
@@ -343,7 +345,7 @@ function renderGrid(){
       +'</div>'
       +'<div class="card-btns">'
       +(t.a?'<a class="btn btn-ao" href="'+t.a+'" target="_blank" rel="noopener" title="Read the full answer on the web — no Discord login needed">Read answer</a>':'')
-      +'<a class="btn btn-dc" href="'+t.u+'" target="_blank" rel="noopener" title="Open the thread in Discord to reply">Open in Discord</a>'
+      +'<a class="btn btn-dc" href="'+t.u+'" target="_blank" rel="noopener" title="Open the thread in Discord to reply">'+DISCORD_ICON+'Open in Discord</a>'
       +'</div></div>';
   }).join('');
   if(more){ if(all.length>ts.length){ const nxt=Math.min(400, all.length-ts.length); more.innerHTML='<button id="more-btn">Show '+nxt+' more <span class="left">· '+(all.length-ts.length)+' left</span></button>'; $('#more-btn').onclick=()=>{ state.limit=(state.limit||400)+400; renderGrid(); }; } else more.innerHTML=''; }
