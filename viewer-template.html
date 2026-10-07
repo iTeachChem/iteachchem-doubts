@@ -55,12 +55,22 @@ input::placeholder{color:oklch(0.62 0.012 260)}
 #byline .by-links a.by-videos{color:var(--videos);font-weight:500}
 
 /* ---- page intro ---- */
-.intro{padding-top:36px}
+.intro{padding-top:24px}
 .intro-top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 32px}
 .intro h1{font-size:30px;font-weight:600;letter-spacing:-0.02em;line-height:1.15}
 .stats{margin-top:8px;font-size:14px;color:var(--muted);text-wrap:pretty}
 .intro-link{font-size:14px;font-weight:500;white-space:nowrap;flex-shrink:0;color:var(--videos)}
 .intro-link:hover{color:oklch(0.88 0.11 165)}
+
+/* Gita strip: one compact line, subtle sky blue — set apart without competing with the chemistry */
+#gita{--sky:oklch(0.83 0.08 230);margin-bottom:20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:7px 8px 7px 12px;border:1px solid oklch(0.83 0.08 230 / .18);border-left:2px solid var(--sky);border-radius:var(--r);background:oklch(0.83 0.08 230 / .06);font-size:13px;line-height:1.5;color:oklch(0.86 0.02 230)}
+.g-text i{color:var(--sky);font-style:italic}
+.g-text{flex:1 1 320px}
+/* two clearly separate actions, right-aligned like the "Browse doubts" link above */
+.g-links{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;font-weight:500}
+.g-links a{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 8px;border:1px solid oklch(0.83 0.08 230 / .40);border-radius:6px;color:var(--sky);white-space:nowrap;font-size:12.5px}
+.g-links a:hover{background:oklch(0.83 0.08 230 / .12);border-color:var(--sky);color:oklch(0.92 0.06 230)}
+.g-short{display:none}
 
 /* ---- subject tabs (underline) ---- */
 #subject-nav{display:flex;gap:4px;margin-top:24px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
@@ -164,6 +174,13 @@ input::placeholder{color:oklch(0.62 0.012 260)}
   #sidebar.open{display:block}
   #content{flex:1 1 auto;width:100%}
   #grid{grid-template-columns:1fr}
+  .g-long{display:none}
+  .g-short{display:inline}
+  #gita{margin-bottom:12px;padding:6px 6px 6px 10px;font-size:12.5px;gap:8px;flex-wrap:nowrap}
+  .g-d{display:none}
+  .g-text{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g-links{margin-left:auto;flex-wrap:nowrap;flex-shrink:0}
+  .g-links a.g-yt{padding:0 8px}  /* icon only on phones */
   /* header: logo + Discord button, full-width search, one swipeable line of links */
   .tb-row{flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:10px;gap:10px}
   .search{order:3;flex:1 1 100%;max-width:none;height:40px}
@@ -220,6 +237,13 @@ input::placeholder{color:oklch(0.62 0.012 260)}
   </div>
 </header>
 <div class="wrap intro">
+  <div id="gita">
+    <span class="g-text"><span class="g-d">For the bigger questions, like how to handle pressure, failure and life, we read </span><i>Bhagavad Gita As It Is</i><span class="g-d"> together.</span></span>
+    <span class="g-links">
+      <a class="g-live" href="https://discord.gg/JrNFuCAk2H?event=1386359084420431872" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18 18 0 0 1 4.3 1.4 13.6 13.6 0 0 0-15 0A18 18 0 0 1 8.8 3.5L8.6 3a19.8 19.8 0 0 0-4.9 1.4A20.6 20.6 0 0 0 .2 18.2a19.9 19.9 0 0 0 6 3l.8-1.3a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.3a19.9 19.9 0 0 0 6-3 20.5 20.5 0 0 0-2.5-13.5ZM8.3 15c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.7.9 1.7 2-.7 2-1.7 2Zm7.4 0c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.7.9 1.7 2-.7 2-1.7 2Z"/></svg><span class="g-long">Join the live reading on Discord</span><span class="g-short">Live</span></a>
+      <a class="g-yt" href="https://www.youtube.com/playlist?list=PL5l36jh8Oss7EPz9YQi4N0qpBbEaYTeZn" target="_blank" rel="noopener" title="Watch from Verse 1 on YouTube" aria-label="Watch from Verse 1 on YouTube"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><rect x="1.5" y="5" width="21" height="14" rx="4" fill="currentColor"/><path d="M10 9v6l5.2-3z" fill="var(--bg)"/></svg><span class="g-long">Watch from Verse 1 on YouTube</span></a>
+    </span>
+  </div>
   <div class="intro-top">
     <div>
       <h1>Student doubts</h1>
