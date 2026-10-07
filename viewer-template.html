@@ -404,14 +404,13 @@ function renderGrid(){
 const KA='https://www.khanacademy.org/';
 const VIDEOS=['Chemistry video library','https://iteachchem.github.io/iteachchem-videos/',2];
 const RES={
-  chemistry:[VIDEOS,['Chem Videos','https://docs.google.com/spreadsheets/d/1kYwIrq9CsiwKa6Riwj143_YtKj1uGW6DSybfCRX4amo/edit?gid=2046243715#gid=2046243715',1],
-             ['Khan Academy · Class 11 Chemistry',KA+'science/class-11-chemistry-india'],['Khan Academy · Class 12 Chemistry',KA+'science/class-12-chemistry-india']],
+  chemistry:[VIDEOS,['Khan Academy · Class 11 Chemistry',KA+'science/class-11-chemistry-india'],['Khan Academy · Class 12 Chemistry',KA+'science/class-12-chemistry-india']],
   physics:[['Khan Academy · Class 11 Physics',KA+'science/in-in-class11th-physics'],['Khan Academy · Class 12 Physics',KA+'science/in-in-class-12th-physics-india']],
   maths:[['Khan Academy · Class 11 Maths',KA+'math/ncert-class-11'],['Khan Academy · Class 12 Maths',KA+'math/ncert-class-12']],
   biology:[['Khan Academy · Class 11 Biology',KA+'science/in-in-class-11-biology-india'],['Khan Academy · Class 12 Biology',KA+'science/in-in-class-12-biology-india']]
 };
 function renderRes(){
-  const list = state.subject==='all' ? [RES.chemistry[0], RES.chemistry[1]] : (RES[state.subject]||[]);
+  const list = state.subject==='all' ? [VIDEOS] : (RES[state.subject]||[]);
   $('#resbar').innerHTML = list.length ? '<span class="res-h">Videos &amp; practice:</span>' + list.map(([l,u,own])=>`<a ${own===2?'class="res-vid" ':own?'class="res-own" ':''}href="${u}" target="_blank" rel="noopener">${l}</a>`).join('') : '';
 }
 function render(){ renderRes(); renderSidebar(); renderSubbar(); renderGrid(); }
