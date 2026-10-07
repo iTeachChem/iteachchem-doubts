@@ -345,7 +345,7 @@ function renderGrid(){
       +'</div>'
       +'<div class="card-btns">'
       +(t.a?'<a class="btn btn-ao" href="'+t.a+'" target="_blank" rel="noopener" title="Read the full answer on the web — no Discord login needed">Read answer</a>':'')
-      +'<a class="btn btn-dc" href="'+t.u+'" target="_blank" rel="noopener" title="Open the thread in Discord to reply">'+DISCORD_ICON+'Open in Discord</a>'
+      +'<a class="btn btn-dc" href="'+t.u+'" target="_blank" rel="noopener" title="Open the thread in Discord to reply" aria-label="Open in Discord">'+DISCORD_ICON+'Open</a>'
       +'</div></div>';
   }).join('');
   if(more){ if(all.length>ts.length){ const nxt=Math.min(400, all.length-ts.length); more.innerHTML='<button id="more-btn">Show '+nxt+' more <span class="left">· '+(all.length-ts.length)+' left</span></button>'; $('#more-btn').onclick=()=>{ state.limit=(state.limit||400)+400; renderGrid(); }; } else more.innerHTML=''; }
