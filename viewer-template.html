@@ -69,6 +69,7 @@ input::placeholder{color:oklch(0.62 0.012 260)}
 .s-tab:hover{color:var(--text)}
 .s-tab.active{color:var(--text);border-bottom-color:var(--accent)}
 .s-tab .count{font:400 12px var(--mono);color:oklch(0.70 0.012 260)}
+.t-short{display:none}
 
 /* ---- layout ---- */
 #layout{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start;padding-top:24px;padding-bottom:24px}
@@ -174,6 +175,18 @@ input::placeholder{color:oklch(0.62 0.012 260)}
   .intro h1{font-size:20px}
   .stats,.intro-link{display:none}
   #subject-nav{margin-top:12px}
+  .stats{display:none}
+}
+/* phones: all subject tabs fit — short names, no counts (the selected count shows in the toolbar) */
+@media (max-width:560px){
+  #subject-nav{gap:0}
+  .s-tab{flex:1 1 0;justify-content:center;padding:10px 4px}
+  .t-long,.s-tab .count{display:none}
+  .t-short{display:inline}
+  .intro h1{font-size:18px}
+  .card{padding:12px 14px;gap:8px}
+  .card-preview{-webkit-line-clamp:2}
+  .btn{height:32px}
   #layout{padding-top:12px}
 }
 @media (max-width:420px){
@@ -215,11 +228,11 @@ input::placeholder{color:oklch(0.62 0.012 260)}
     <a class="intro-link" href="https://iteachchem.github.io/iteachchem-videos/" target="_blank" rel="noopener">Watch the chemistry videos →</a>
   </div>
   <nav id="subject-nav" role="tablist">
-    <button class="s-tab active" data-s="chemistry">Chemistry<span class="count" id="cnt-chemistry">0</span></button>
-    <button class="s-tab" data-s="physics">Physics<span class="count" id="cnt-physics">0</span></button>
-    <button class="s-tab" data-s="maths">Maths<span class="count" id="cnt-maths">0</span></button>
-    <button class="s-tab" data-s="biology">Biology<span class="count" id="cnt-biology">0</span></button>
-    <button class="s-tab" data-s="all">All<span class="count" id="cnt-all">0</span></button>
+    <button class="s-tab active" data-s="chemistry" title="Chemistry"><span class="t-long">Chemistry</span><span class="t-short">Chem</span><span class="count" id="cnt-chemistry">0</span></button>
+    <button class="s-tab" data-s="physics" title="Physics"><span class="t-long">Physics</span><span class="t-short">Phy</span><span class="count" id="cnt-physics">0</span></button>
+    <button class="s-tab" data-s="maths" title="Maths"><span class="t-long">Maths</span><span class="t-short">Math</span><span class="count" id="cnt-maths">0</span></button>
+    <button class="s-tab" data-s="biology" title="Biology"><span class="t-long">Biology</span><span class="t-short">Bio</span><span class="count" id="cnt-biology">0</span></button>
+    <button class="s-tab" data-s="all" title="All"><span class="t-long">All</span><span class="t-short">All</span><span class="count" id="cnt-all">0</span></button>
   </nav>
 </div>
 <div id="layout" class="wrap">
