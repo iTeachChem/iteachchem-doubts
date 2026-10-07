@@ -50,3 +50,12 @@ previews, and links. The bot token lives only in the encrypted GitHub secret. Sa
 
 Any Discord server with a forum-based doubts channel can build the same thing — the
 generic, server-agnostic version lives in `doubt-tagger-generic-v2/` in the project repo.
+
+## Two ways the page gets published
+| Workflow | When | Talks to Discord? |
+|---|---|---|
+| **Build & Deploy Doubts Index** (`build.yml`) | every Monday 06:00 UTC, or Actions → Run workflow | **Yes** — pulls new doubts |
+| **Restyle only** (`restyle.yml`) | automatically on any push that changes only `viewer-template.html` / `restyle-only.js`, or Actions → Run workflow | **No** — reuses the doubts already live |
+
+Design changes: edit `viewer-template.html`, push, done — the restyle job publishes in ~1 min and leaves the
+Discord pull alone. It refuses to publish if it can't read the live data, so it can't blank the page.
