@@ -71,7 +71,7 @@ input::placeholder{color:oklch(0.62 0.012 260)}
 .intro-link:hover{color:oklch(0.88 0.11 165)}
 
 /* Gita strip: one compact line, subtle sky blue — set apart without competing with the chemistry */
-#gita{--sky:oklch(0.83 0.08 230);margin-bottom:20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:7px 8px 7px 12px;border:1px solid oklch(0.83 0.08 230 / .18);border-left:2px solid var(--sky);border-radius:var(--r);background:oklch(0.83 0.08 230 / .06);font-size:13px;line-height:1.5;color:oklch(0.86 0.02 230)}
+#gita{--sky:oklch(0.83 0.08 230);margin-bottom:20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:7px 8px 7px 12px;border:1px solid var(--line);border-radius:var(--r);background:oklch(0.83 0.08 230 / .06);font-size:13px;line-height:1.5;color:oklch(0.86 0.02 230)}
 .g-text i{color:var(--sky);font-style:italic}
 .g-text{flex:1 1 320px}
 /* two clearly separate actions, right-aligned like the "Browse doubts" link above */
@@ -154,8 +154,8 @@ input::placeholder{color:oklch(0.62 0.012 260)}
 .btn{flex:1;display:flex;align-items:center;justify-content:center;height:34px;border-radius:7px;font-size:13px;white-space:nowrap}
 .btn-ao{background:oklch(0.80 0.12 65 / .14);color:oklch(0.86 0.10 65);font-weight:600}
 .btn-ao:hover{background:oklch(0.80 0.12 65 / .22);color:oklch(0.86 0.10 65)}
-.btn-dc{gap:7px;background:#5865f2;color:#fff;font-weight:600}  /* Discord's own blurple */
-.btn-dc:hover{background:#4752c4;color:#fff}
+.btn-dc{gap:7px;border:1px solid var(--line2);color:var(--text);font-weight:500}  /* secondary; 'Read answer' is primary */
+.btn-dc:hover{border-color:oklch(0.45 0.01 260);color:var(--text)}
 #more{display:flex;justify-content:center;margin-top:20px}
 #more:empty{display:none}
 #more-btn{height:40px;padding:0 22px;border-radius:var(--r);border:1px solid var(--line2);background:var(--surf);cursor:pointer;font-size:14px;font-weight:500}
@@ -290,6 +290,10 @@ const DISCORD_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="curr
 const state = { subject:'chemistry', chapter:'__all__', sub:'__all__', q:'', solved:false, limit:400 };
 const $ = s => document.querySelector(s);
 const esc = s => (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// Discord mention markup in previews: <@id>/<@!id> -> @user, <@&id> -> @role, <#id> -> #channel
+const cleanMentions = s => (s||'').replace(/<@!?\d+>/g,'@user').replace(/<@&\d+>/g,'@role').replace(/<#\d+>/g,'#channel');
+// sub-type equal to the chapter once the branch prefix is dropped -> don't repeat it as a tag
+const bare = s => (s||'').replace(/^\s*(physical|organic|inorganic)\s*:\s*/i,'').trim().toLowerCase();
 const fmtDate = ms => ms ? new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
 
 const SUBJECTS = ['chemistry','physics','maths','biology'];
@@ -366,7 +370,8 @@ function currentList(){
 function renderGrid(){
   const all=currentList();
   const ts = all.slice(0, state.limit||400);
-  $('#crumb').innerHTML = '<span class="num">'+all.length+'</span> doubt'+(all.length===1?'':'s')+(state.chapter!=='__all__'?' in <b>'+esc((all[0]?all[0].cl:state.chapter))+'</b>':'');
+  const n = all.filter(t=>!t.pin).length;  // pinned posts ride along but aren't counted
+  $('#crumb').innerHTML = '<span class="num">'+n+'</span> doubt'+(n===1?'':'s')+(state.chapter!=='__all__'?' in <b>'+esc((all[0]?all[0].cl:state.chapter))+'</b>':'');
   $('#clear').hidden = !filtersActive();
   const grid=$('#grid'); const more=$('#more');
   if(!all.length){ grid.innerHTML=''; if(more)more.innerHTML=''; $('#empty').style.display='block'; return; }
@@ -374,14 +379,14 @@ function renderGrid(){
   grid.innerHTML = ts.map(t=>{
     const low = t.cf<2, isUncat = t.ch==='uncat';
     const chTag = t.pin ? '' : (isUncat ? '<span class="tag">Uncategorized</span>'
-      : '<span class="tag">'+esc(t.cl)+'</span>'+(t.sl&&t.sl!==t.cl?'<span class="tag">'+esc(t.sl)+'</span>':''));
+      : '<span class="tag">'+esc(t.cl)+'</span>'+(t.sl&&bare(t.sl)!==bare(t.cl)?'<span class="tag">'+esc(t.sl)+'</span>':''));
     const lowTag = (low && !isUncat) ? '<span class="tag tag-low" title="Low-confidence guess — only a generic keyword matched. Review if needed.">? guess</span>' : '';
     // the answer on Answer Overflow opens without a Discord login, so it is the primary link
     const primary = t.a || t.u;
     return '<div class="card">'
       +(t.pin?'<span class="pin-label">Pinned</span>':'')
       +'<a class="card-title" href="'+primary+'" target="_blank" rel="noopener">'+esc(t.t||'(untitled)')+'</a>'
-      +(t.p?'<div class="card-preview">'+esc(t.p)+'</div>':'')
+      +(t.p?'<div class="card-preview">'+esc(cleanMentions(t.p))+'</div>':'')
       +'<div class="tags">'+chTag+lowTag+'</div>'
       +'<div class="card-meta">'
       +(t.sv?'<span class="solved">Solved</span>':'')
