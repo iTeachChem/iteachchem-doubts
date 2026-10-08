@@ -3,7 +3,7 @@
 This folder is a ready-to-push repo. GitHub rebuilds the doubts index **every week**
 by scraping Discord, and publishes it as a live web page — free, no server to run.
 
-**Data flow:** Discord (your bot) → GitHub Action (weekly) → `public/index.html` → GitHub Pages URL.
+**Data flow:** Discord (your bot) → GitHub Action (weekly) → `public/index.html` + `public/threads.json` → GitHub Pages URL.
 Answer Overflow isn't a data source here; it's only the per-thread links on the cards.
 
 ---

@@ -35,6 +35,7 @@ jobs:
           FORUM_CHANNEL_ID: ${{ secrets.FORUM_CHANNEL_ID }}
           SERVER_NAME: iTeachChem
           OUTPUT_FILE: public/index.html
+          DATA_FILE: public/threads.json
         run: |
           mkdir -p public
           node tag-doubts.js

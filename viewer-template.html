@@ -283,7 +283,9 @@ input::placeholder{color:oklch(0.62 0.012 260)}
   </section>
 </div>
 <script>
-const THREADS = /*__DATA__*/;
+// The doubts live in threads.json next to this page, so the page stays small enough for
+// Telegram's link preview. A local build can still inline them (then this isn't null).
+let THREADS = /*__DATA__*/;
 
 const DISCORD_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18 18 0 0 1 4.3 1.4 13.6 13.6 0 0 0-15 0A18 18 0 0 1 8.8 3.5L8.6 3a19.8 19.8 0 0 0-4.9 1.4A20.6 20.6 0 0 0 .2 18.2a19.9 19.9 0 0 0 6 3l.8-1.3a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.3a19.9 19.9 0 0 0 6-3 20.5 20.5 0 0 0-2.5-13.5ZM8.3 15c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.7.9 1.7 2-.7 2-1.7 2Zm7.4 0c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.7.9 1.7 2-.7 2-1.7 2Z"/></svg>';
 
@@ -297,12 +299,6 @@ const bare = s => (s||'').replace(/^\s*(physical|organic|inorganic)\s*:\s*/i,'')
 const fmtDate = ms => ms ? new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
 
 const SUBJECTS = ['chemistry','physics','maths','biology'];
-SUBJECTS.forEach(s=>{ const el=$('#cnt-'+s); if(el) el.textContent = THREADS.filter(t=>t.s===s).length; });
-$('#thread-count').textContent = THREADS.length;
-{ const ae=$('#cnt-all'); if(ae) ae.textContent = THREADS.length; }
-// hide subject tabs that have zero doubts (keeps the bar clean on smaller servers)
-SUBJECTS.forEach(s=>{ if(!THREADS.some(t=>t.s===s)){ const tab=document.querySelector('.s-tab[data-s="'+s+'"]'); if(tab) tab.style.display='none'; } });
-if(!THREADS.some(t=>t.s===state.subject)){ const first=THREADS[0]; if(first){ state.subject=first.s; document.querySelectorAll('.s-tab').forEach(t=>t.classList.toggle('active',t.dataset.s===first.s)); } }
 
 const BRANCH_ORDER = {
   chemistry:['Physical','Organic','Inorganic','Uncategorized'],
@@ -413,7 +409,7 @@ function renderRes(){
   const list = state.subject==='all' ? [VIDEOS] : (RES[state.subject]||[]);
   $('#resbar').innerHTML = list.length ? '<span class="res-h">Videos &amp; practice:</span>' + list.map(([l,u,own])=>`<a ${own===2?'class="res-vid" ':own?'class="res-own" ':''}href="${u}" target="_blank" rel="noopener">${l}</a>`).join('') : '';
 }
-function render(){ renderRes(); renderSidebar(); renderSubbar(); renderGrid(); }
+function render(){ if(!THREADS) return; renderRes(); renderSidebar(); renderSubbar(); renderGrid(); }
 document.querySelectorAll('.s-tab').forEach(tab=>tab.onclick=()=>{
   document.querySelectorAll('.s-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
@@ -429,7 +425,19 @@ $('#solved-only').addEventListener('change', e=>{ state.solved=e.target.checked;
 $('#search-input').addEventListener('input', e=>{ const v=e.target.value.trim(); clearTimeout(__searchTimer); __searchTimer=setTimeout(()=>{ state.q=v; state.limit=400; render(); }, 120); });
 // "/" jumps to search (unless already typing somewhere)
 document.addEventListener('keydown', e=>{ if(e.key==='/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){ e.preventDefault(); $('#search-input').focus(); } });
+function start(){
+SUBJECTS.forEach(s=>{ const el=$('#cnt-'+s); if(el) el.textContent = THREADS.filter(t=>t.s===s).length; });
+$('#thread-count').textContent = THREADS.length;
+{ const ae=$('#cnt-all'); if(ae) ae.textContent = THREADS.length; }
+// hide subject tabs that have zero doubts (keeps the bar clean on smaller servers)
+SUBJECTS.forEach(s=>{ if(!THREADS.some(t=>t.s===s)){ const tab=document.querySelector('.s-tab[data-s="'+s+'"]'); if(tab) tab.style.display='none'; } });
+if(!THREADS.some(t=>t.s===state.subject)){ const first=THREADS[0]; if(first){ state.subject=first.s; document.querySelectorAll('.s-tab').forEach(t=>t.classList.toggle('active',t.dataset.s===first.s)); } }
 render();
+}
+if(THREADS) start();
+else fetch('threads.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(d=>{ THREADS=d; start(); })
+  .catch(()=>{ $('#empty').style.display='block'; $('#empty').innerHTML='<h3>Couldn\'t load the doubts</h3><p>Check your connection and reload the page.</p>'; });
 </script>
 </body>
 </html>

@@ -15,7 +15,8 @@ It rebuilds itself automatically every week.
 - **✅ Solved** badges, an **ask-date** on every card, and a 📎 flag on image doubts.
 - **"All" tab** — one global feed of every doubt.
 - Each card links to the original **Discord** thread and its **Answer Overflow** page.
-- One self-contained HTML file: fast, works offline, no login, safe to share.
+- A small page plus its data (`threads.json`), so link previews work in Telegram too. No login, safe to share.
+  A local build (`node tag-doubts.js` without `DATA_FILE`) is still one self-contained HTML file that opens offline.
 
 ## How it works
 
@@ -29,6 +30,7 @@ No server to run.
 | `tag-doubts.js` | Scraper + page builder (Node 18+, no dependencies) |
 | `classify.js` | Chapter / sub-type classifier |
 | `viewer-template.html` | The page shell the data is injected into |
+| `live-data.js` | Reads the doubts already live; writes `index.html` + `threads.json` |
 | `ao_ids.txt` | Optional curated Answer Overflow list (AO now links all by default) |
 | `.github/workflows/build.yml` | Weekly build + deploy to Pages |
 

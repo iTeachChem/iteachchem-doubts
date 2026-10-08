@@ -23,6 +23,8 @@ const BOT_TOKEN        = process.env.DISCORD_TOKEN      || 'PASTE_YOUR_BOT_TOKEN
 const FORUM_CHANNEL_ID = process.env.FORUM_CHANNEL_ID   || 'PASTE_YOUR_FORUM_CHANNEL_ID_HERE';
 const OUTPUT_FILE      = process.env.OUTPUT_FILE        || 'iteachchem_doubts_index_v5.html';
 const SERVER_NAME      = process.env.SERVER_NAME        || 'iTeachChem';   // shown in the page header
+// Where the doubts go (e.g. public/threads.json; the page fetches it). Unset -> inlined in the page.
+const DATA_FILE        = process.env.DATA_FILE          || '';
 // Optional: add an "AO" (Answer Overflow) button to every card. Only turn on
 // if your server uses the Answer Overflow bot AND indexes this channel.
 const ENABLE_AO_LINKS  = (process.env.ENABLE_AO_LINKS === 'true') || false;
@@ -48,6 +50,7 @@ const PREV_SITE_URL    = process.env.PREV_SITE_URL || 'https://iteachchem.github
 const fs = require('fs');
 const path = require('path');
 const { classify } = require('./classify.js');
+const { loadLive, writeBuild } = require('./live-data.js');
 
 const API = 'https://discord.com/api/v10';
 const HEADERS = { Authorization: `Bot ${BOT_TOKEN}`, 'User-Agent': 'DoubtIndexBot/1.0' };
@@ -96,13 +99,9 @@ async function fetchThread(threadId) {
 async function loadCache() {
   if (!INCREMENTAL || FULL_REBUILD) { console.log('Incremental: OFF -> full scrape.'); return new Map(); }
   try {
-    const res = await fetch(PREV_SITE_URL, { headers: { 'User-Agent': 'DoubtIndexBot/1.0' } });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const html = await res.text();
-    const m = html.match(/const THREADS = (\[[\s\S]*\]);\s*\r?\nconst DISCORD_ICON/);
-    if (!m) throw new Error('could not parse previous THREADS');
+    const { records } = await loadLive(PREV_SITE_URL);
     const cache = new Map();
-    for (const r of JSON.parse(m[1])) { const id = (String(r.u || '').match(/\/(\d+)$/) || [])[1]; if (id) cache.set(id, r); }
+    for (const r of records) { const id = (String(r.u || '').match(/\/(\d+)$/) || [])[1]; if (id) cache.set(id, r); }
     console.log(`Incremental: cached ${cache.size} doubts from the previous build.`);
     return cache;
   } catch (e) { console.log('Incremental: no cache (' + e.message + ') -> full scrape.'); return new Map(); }
@@ -183,18 +182,6 @@ function branchOf(s, ch) {
   return 'Other';
 }
 
-// --- Build the HTML --------------------------------------------------------
-function buildHtml(records, guildId) {
-  const tmplPath = path.join(__dirname, 'viewer-template.html');
-  const tmpl = fs.readFileSync(tmplPath, 'utf8');
-  const updated = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  return tmpl
-    .replace('/*__DATA__*/', JSON.stringify(records))
-    .replace(/__SERVER_NAME__/g, SERVER_NAME.replace(/[<>]/g, ''))
-    .replace(/__UPDATED__/g, updated)
-    .replace(/__COUNT__/g, String(records.length));
-}
-
 // --- Main ------------------------------------------------------------------
 (async () => {
   if (BOT_TOKEN.startsWith('PASTE') || FORUM_CHANNEL_ID.startsWith('PASTE')) {
@@ -265,6 +252,8 @@ function buildHtml(records, guildId) {
   console.log('By subject:', bySub);
   console.log('Uncategorized:', uncat);
 
-  fs.writeFileSync(OUTPUT_FILE, buildHtml(records, guildId), 'utf8');
-  console.log(`\n✓ Wrote ${OUTPUT_FILE}  (${records.length} doubts). Open it in any browser.\n`);
+  const tmpl = fs.readFileSync(path.join(__dirname, 'viewer-template.html'), 'utf8');
+  const updated = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  writeBuild(tmpl, records, { outputFile: OUTPUT_FILE, dataFile: DATA_FILE, serverName: SERVER_NAME, updated });
+  console.log(`\n✓ Wrote ${OUTPUT_FILE}${DATA_FILE ? ' + ' + DATA_FILE : ''}  (${records.length} doubts).\n`);
 })().catch(e => { console.error('\n❌ Error:', e.message, '\n'); process.exit(1); });

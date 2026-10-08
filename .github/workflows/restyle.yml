@@ -6,7 +6,7 @@ name: Restyle only (no Discord pull)
 on:
   push:
     branches: [main]
-    paths: ['viewer-template.html', 'restyle-only.js']
+    paths: ['viewer-template.html', 'restyle-only.js', 'live-data.js']
   workflow_dispatch:
 
 permissions:
@@ -37,6 +37,7 @@ jobs:
         env:
           SERVER_NAME: iTeachChem
           OUTPUT_FILE: public/index.html
+          DATA_FILE: public/threads.json
         run: node restyle-only.js
 
       - name: Configure Pages
