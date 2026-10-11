@@ -104,13 +104,16 @@ input::placeholder{color:oklch(0.62 0.012 260)}
 .ch-item .n{font:400 12px/20px var(--mono);color:var(--faint)}
 .ch-item.active .n{color:var(--accent);opacity:.8}
 .ch-all{font-weight:500;padding:9px 10px}
-#resbar{margin-top:24px;padding:14px 10px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;font-size:13px}
+/* videos & practice links: right under the subject tabs so they get seen; wraps, never scrolls sideways */
+#resbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 8px;margin-top:12px;font-size:13px}
 #resbar:empty{display:none}
-#resbar .res-h{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
-#resbar a{color:oklch(0.84 0.01 260)}
-#resbar a:hover{color:oklch(0.87 0.09 65)}
-#resbar a.res-own{color:var(--accent);font-weight:600}
-#resbar a.res-vid{color:var(--videos);font-weight:600}
+#resbar .res-h{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-right:2px}
+#resbar .res-ka{color:var(--muted);margin-left:6px}
+#resbar a{display:inline-flex;align-items:center;height:28px;padding:0 10px;border:1px solid var(--line2);border-radius:6px;color:var(--text);font-weight:500;white-space:nowrap}
+#resbar a:hover{border-color:oklch(0.87 0.09 65);color:oklch(0.87 0.09 65)}
+#resbar .res-short{display:none}
+#resbar a.res-vid{color:var(--videos);border-color:oklch(0.80 0.13 165 / .45)}
+#resbar a.res-vid:hover{border-color:var(--videos);color:oklch(0.88 0.11 165)}
 
 /* ---- toolbar above the grid ---- */
 .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
@@ -207,6 +210,11 @@ input::placeholder{color:oklch(0.62 0.012 260)}
   #subject-nav{gap:0}
   .s-tab{flex:1 1 0;justify-content:center;padding:10px 4px}
   .t-long,.s-tab .count{display:none}
+  #resbar .res-h,#resbar .res-subj,#resbar .res-long{display:none}
+  #resbar .res-short{display:inline}
+  #resbar{gap:6px;font-size:12.5px}
+  #resbar a{padding:0 8px}
+  #resbar .res-ka{margin-left:2px}
   .t-short{display:inline}
   .intro h1{font-size:18px}
   .card{padding:12px 14px;gap:8px}
@@ -266,10 +274,11 @@ input::placeholder{color:oklch(0.62 0.012 260)}
     <button class="s-tab" data-s="biology" title="Biology"><span class="t-long">Biology</span><span class="t-short">Bio</span><span class="count" id="cnt-biology">0</span></button>
     <button class="s-tab" data-s="all" title="All"><span class="t-long">All</span><span class="t-short">All</span><span class="count" id="cnt-all">0</span></button>
   </nav>
+  <div id="resbar" aria-label="Videos and practice"></div>
 </div>
 <div id="layout" class="wrap">
   <button id="ch-toggle" aria-expanded="false" aria-controls="sidebar"><span>Browse by chapter</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.74 0.012 260)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
-  <aside id="sidebar"><div id="sb-list"></div><div id="resbar"></div></aside>
+  <aside id="sidebar"><div id="sb-list"></div></aside>
   <section id="content">
     <div class="toolbar">
       <div id="crumb"></div>
@@ -400,16 +409,21 @@ function renderGrid(){
 const KA='https://www.khanacademy.org/';
 const VIDEOS=['Chemistry video library','https://iteachchem.github.io/iteachchem-videos/',2];
 const RES={
-  chemistry:[VIDEOS,['Khan Academy · Class 11 Chemistry',KA+'science/class-11-chemistry-india'],['Khan Academy · Class 12 Chemistry',KA+'science/class-12-chemistry-india']],
-  physics:[['Khan Academy · Class 11 Physics',KA+'science/in-in-class11th-physics'],['Khan Academy · Class 12 Physics',KA+'science/in-in-class-12th-physics-india']],
-  maths:[['Khan Academy · Class 11 Maths',KA+'math/ncert-class-11'],['Khan Academy · Class 12 Maths',KA+'math/ncert-class-12']],
-  biology:[['Khan Academy · Class 11 Biology',KA+'science/in-in-class-11-biology-india'],['Khan Academy · Class 12 Biology',KA+'science/in-in-class-12-biology-india']]
+  chemistry:{videos:true, ka:[['Class 11','Chemistry',KA+'science/class-11-chemistry-india'],['Class 12','Chemistry',KA+'science/class-12-chemistry-india']]},
+  physics:{ka:[['Class 11','Physics',KA+'science/in-in-class11th-physics'],['Class 12','Physics',KA+'science/in-in-class-12th-physics-india']]},
+  maths:{ka:[['Class 11','Maths',KA+'math/ncert-class-11'],['Class 12','Maths',KA+'math/ncert-class-12']]},
+  biology:{ka:[['Class 11','Biology',KA+'science/in-in-class-11-biology-india'],['Class 12','Biology',KA+'science/in-in-class-12-biology-india']]},
+  all:{videos:true, ka:[]}
 };
 function renderRes(){
-  const list = state.subject==='all' ? [VIDEOS] : (RES[state.subject]||[]);
-  $('#resbar').innerHTML = list.length ? '<span class="res-h">Videos &amp; practice:</span>' + list.map(([l,u,own])=>`<a ${own===2?'class="res-vid" ':own?'class="res-own" ':''}href="${u}" target="_blank" rel="noopener">${l}</a>`).join('') : '';
+  const r = RES[state.subject] || {ka:[]};
+  let h = '<span class="res-h">Videos &amp; practice:</span>';
+  if(r.videos) h += `<a class="res-vid" href="${VIDEOS[1]}" target="_blank" rel="noopener"><span class="res-long">${VIDEOS[0]}</span><span class="res-short">Video library</span></a>`;
+  // "Khan Academy" said once; each button is "Class 11 <subject>" (subject name hidden on phones)
+  if(r.ka.length) h += '<span class="res-ka">Khan Academy</span>' + r.ka.map(([cls,subj,u])=>`<a href="${u}" target="_blank" rel="noopener" title="Khan Academy · ${cls} ${subj}">${cls}<span class="res-subj">&nbsp;${subj}</span></a>`).join('');
+  $('#resbar').innerHTML = h;
 }
-function render(){ if(!THREADS) return; renderRes(); renderSidebar(); renderSubbar(); renderGrid(); }
+function render(){ renderRes(); if(!THREADS) return; renderSidebar(); renderSubbar(); renderGrid(); }
 document.querySelectorAll('.s-tab').forEach(tab=>tab.onclick=()=>{
   document.querySelectorAll('.s-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
