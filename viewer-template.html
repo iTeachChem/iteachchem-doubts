@@ -225,6 +225,13 @@ input::placeholder{color:oklch(0.62 0.012 260)}
 @media (max-width:420px){
   .logo span{display:none}
 }
+
+/* back-to-top: appears after ~1.5 screens of scrolling, hides near the top */
+#to-top{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:300;width:44px;height:44px;border-radius:22px;border:1px solid var(--line2);background:oklch(0.235 0.01 260 / .92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--accent);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .2s,transform .2s}
+#to-top.show{opacity:1;transform:none;pointer-events:auto}
+#to-top:hover{border-color:var(--accent)}
+#to-top:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media print{#to-top{display:none}}
 </style>
 </head>
 <body>
@@ -291,6 +298,7 @@ input::placeholder{color:oklch(0.62 0.012 260)}
     <div id="empty"><h3>No doubts found</h3><p>Try a different chapter, type, or search term. <button data-clear="1">Clear filters</button> or <a href="https://discord.gg/Ust8YpSCYf" target="_blank" rel="noopener">ask it on Discord</a>.</p></div>
   </section>
 </div>
+<button id="to-top" type="button" aria-label="Back to top" title="Back to top"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"/></svg></button>
 <script>
 // The doubts live in threads.json next to this page, so the page stays small enough for
 // Telegram's link preview. A local build can still inline them (then this isn't null).
@@ -452,6 +460,21 @@ if(THREADS) start();
 else fetch('threads.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
   .then(d=>{ THREADS=d; start(); })
   .catch(()=>{ $('#empty').style.display='block'; $('#empty').innerHTML='<h3>Couldn\'t load the doubts</h3><p>Check your connection and reload the page.</p>'; });
+
+// back-to-top button: shown after ~1.5 screens, smooth unless the user prefers reduced motion
+(() => {
+  const btn = document.getElementById("to-top");
+  const update = () => btn.classList.toggle("show", window.scrollY > window.innerHeight * 1.5);
+  window.addEventListener("scroll", update, {passive: true});
+  btn.addEventListener("click", () => {
+    const y0 = window.scrollY;
+    window.scrollTo({top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+    // if smooth scrolling didn't start (old phone browsers, background tabs), jump instead
+    setTimeout(() => { if (window.scrollY >= y0 - 1) window.scrollTo(0, 0); update(); }, 600);
+    setTimeout(update, 1500);  // re-check once the smooth scroll has finished
+  });
+  update();
+})();
 </script>
 </body>
 </html>
