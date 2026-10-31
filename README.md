@@ -61,3 +61,15 @@ generic, server-agnostic version lives in `doubt-tagger-generic-v2/` in the proj
 
 Design changes: edit `viewer-template.html`, push, done — the restyle job publishes in ~1 min and leaves the
 Discord pull alone. It refuses to publish if it can't read the live data, so it can't blank the page.
+
+## Doubt-solving skill for Claude
+
+[`skill/doubts/SKILL.md`](skill/doubts/SKILL.md) is a Claude skill that solves JEE / NEET / board doubts
+(physics, chemistry, maths, biology): it checks the answer key, searches this index for the same
+question, cites NCERT first and then the standard books, and writes a short hint-first reply.
+
+To use it in Claude Code, copy the `skill/doubts` folder to `~/.claude/skills/doubts`. In a claude.ai
+chat, upload `SKILL.md` as a skill (Settings → Capabilities) or paste it in at the start.
+
+Note: the index only has each doubt's title and the start of the question, not the replies, so the
+skill treats a match as "asked before" and still answers the doubt itself.
