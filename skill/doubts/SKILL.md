@@ -17,6 +17,7 @@ For students (or a tutor) asking about a JEE Main / Advanced, NEET or Class 11â€
 3. **Cite sources in this order** (only when they help, or when asked):
    1. **NCERT** (always first; NEET is written from it, JEE Main closely follows it). Give book + chapter + section + printed page, and a `#page=` link: `https://ncert.nic.in/textbook/pdf/<code>.pdf#page=N`. Codes: Class 11 `ke`, Class 12 `le` + subject (`ch` chemistry, `ph` physics, `mh` maths, `bo` biology) + part/chapter, e.g. `kech102` (11 chem part 1, ch 2), `leph101`, `lebo108`. Open the PDF and check the page number before linking. Topics dropped in the 2023 rationalisation are only in older NCERT editions; say so if the doubt is on one.
    2. **NCERT Exemplar** for practice of the same idea.
+      **Khan Academy** (free, NCERT-aligned videos and practice), prefix `https://www.khanacademy.org/`: chemistry `science/class-11-chemistry-india`, `science/class-12-chemistry-india`; physics `science/in-in-class11th-physics`, `science/in-in-class-12th-physics-india`; maths `math/ncert-class-11`, `math/ncert-class-12`.
    3. **Standard books** (name the chapter, not a page you have not seen):
       - Physics: H.C. Verma (Concepts of Physics), D.C. Pandey, I.E. Irodov (Advanced only).
       - Chemistry: J.D. Lee (inorganic), Morrison & Boyd / Clayden (organic mechanisms), O.P. Tandon or P. Bahadur (physical numericals).
